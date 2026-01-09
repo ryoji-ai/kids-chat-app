@@ -30,17 +30,23 @@ export default function ChatRoom() {
   useEffect(() => {
     const q = query(
       collection(db, 'messages'),
-      orderBy('createdAt', 'desc'),
+      orderBy('createdAt', 'asc'),
       limit(100)
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const newMessages = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Message[];
-      setMessages(newMessages.reverse());
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const newMessages = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Message[];
+        setMessages(newMessages);
+      },
+      (error) => {
+        console.error('Firestore error:', error);
+      }
+    );
 
     return () => unsubscribe();
   }, []);
