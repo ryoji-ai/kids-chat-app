@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, limit } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Message } from '@/lib/types';
@@ -28,19 +28,24 @@ export default function ChatRoom() {
   }, [currentUser]);
 
   useEffect(() => {
-    const q = query(
-      collection(db, 'messages'),
-      orderBy('createdAt', 'asc'),
-      limit(100)
-    );
+    const messagesRef = collection(db, 'messages');
+    const q = query(messagesRef, orderBy('createdAt', 'asc'));
 
     const unsubscribe = onSnapshot(
       q,
+      { includeMetadataChanges: true },
       (snapshot) => {
-        const newMessages = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Message[];
+        const newMessages: Message[] = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          newMessages.push({
+            id: doc.id,
+            senderId: data.senderId,
+            content: data.content,
+            type: data.type,
+            createdAt: data.createdAt,
+          });
+        });
         setMessages(newMessages);
       },
       (error) => {
